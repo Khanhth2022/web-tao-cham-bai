@@ -12,14 +12,16 @@ npm start
 
 Mở `http://localhost:3001`.
 
-## Bật OpenAI Vision
+## Bật DeepSeek Vision
 
-1. Sao chép `.env.example` thành `.env`.
-2. Điền `OPENAI_API_KEY` ở phía server; không dùng biến `VITE_` cho khóa bí mật.
-3. Khởi động lại `npm start`.
-4. Upload ảnh tại mục **Tạo đề bằng AI**.
+1. Tạo API key tại https://platform.deepseek.com/api_keys.
+2. Sao chép `.env.example` thành `.env`.
+3. Điền `DEEPSEEK_API_KEY` ở phía server; không dùng biến `VITE_` cho khóa bí mật.
+4. API gọi `https://api.deepseek.com/chat/completions` với model `deepseek-v4-flash-vision-exp` (DeepSeek hiện ghi nhận tên legacy này vẫn được chấp nhận và được phục vụ bởi V4.1 Flash).
+5. Khởi động lại `npm start`.
+6. Upload ảnh tại mục **Tạo đề bằng AI**.
 
-Nếu chưa có khóa, API vẫn chạy chế độ demo để kiểm tra giao diện.
+Nếu chưa có khóa, API vẫn chạy chế độ demo để kiểm tra giao diện. Với PDF, hãy chuyển từng trang đáp án thành PNG/JPG trước khi upload; endpoint hiện nhận trường `image`.
 
 ## Bật Supabase
 
