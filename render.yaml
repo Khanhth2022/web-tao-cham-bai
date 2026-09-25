@@ -1,0 +1,48 @@
+# Render Blueprint — PHƯƠNG ÁN MIỄN PHÍ (Free plan)
+#
+# Đây là bản dùng cho gói Free (0 đồng). Gói Free KHÔNG gắn được ổ đĩa cứng
+# (Persistent Disk), nên dữ liệu (tài khoản, lớp, bài tập) SẼ MẤT mỗi lần
+# Render deploy lại hoặc khi service tự ngủ sau 15 phút không có truy cập.
+#
+# Dùng file này khi bạn chỉ muốn thử/demo. Khi cần giữ dữ liệu thật, xem
+# file render.paid.yaml (có gắn Disk).
+#
+# Cách dùng:
+#   1. Đưa file lên GitHub (giữ nguyên tên render.yaml)
+#   2. Render Dashboard → New → Blueprint → chọn repo
+#   3. Deploy Blueprint → điền ADMIN_PASSWORD và DEEPSEEK_API_KEY khi được hỏi
+
+services:
+  - type: web
+    name: lopso
+    runtime: node
+    plan: free
+    region: singapore
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+
+    envVars:
+      # --- Bắt buộc, phải tự điền ---
+      # Mật khẩu đăng nhập lần đầu. TỐI THIỂU 12 KÝ TỰ, nếu ngắn hơn
+      # server sẽ crash ngay khi khởi động.
+      - key: ADMIN_PASSWORD
+        sync: false
+      # Khoá gọi API DeepSeek Vision (đọc ảnh đề thi). Lấy từ nhà cung cấp.
+      - key: DEEPSEEK_API_KEY
+        sync: false
+
+      # --- Có giá trị mặc định, sửa nếu cần ---
+      - key: ADMIN_EMAIL
+        value: admin@lopso.vn
+      - key: DEEPSEEK_BASE_URL
+        value: https://api.xompet.io.vn/v1
+      - key: DEEPSEEK_VISION_MODEL
+        value: deepseek-v4-flash-vision-exp
+
+      # --- Không khai báo DATA_DIR trên gói Free ---
+      # Vì không có Disk để trỏ vào, đặt DATA_DIR cũng vô nghĩa:
+      # thư mục code bị xoá sạch mỗi lần deploy. Để trống = dùng ./data trong
+      # thư mục code, cũng mất y như vậy.

@@ -1,5 +1,9 @@
 # Deploy "Lớp Số" (web-tao-cham-bai) lên web
 
+> **Đang tìm hướng dẫn Render?** Xem `RENDER.md` — tài liệu riêng, chi tiết từng bước cho Render, gồm cả chọn gói Free hay trả phí và cách giữ dữ liệu bằng Persistent Disk.
+>
+> File này là bản tổng quát, dùng khi bạn định deploy lên **VPS** hoặc muốn nhìn nhanh toàn cảnh.
+
 Tài liệu này gồm 2 phần:
 
 - **Phần A — Deploy lần đầu**: đưa app từ máy bạn lên internet.
@@ -39,15 +43,13 @@ Mở `.env` và điền. **Bắt buộc đổi `ADMIN_PASSWORD`**, đừng để
 ```env
 PORT=3001
 ADMIN_EMAIL=admin@lopso.vn
-ADMIN_PASSWORD=<mật-khẩu-mạnh-của-bạn>
-SESSION_SECRET=<chuỗi-ngẫu-nhiên-dài>
+ADMIN_PASSWORD=<mật-khẩu-mạnh-của-bạn, tối thiểu 12 ký tự>
+DEEPSEEK_API_KEY=<key-gọi-AI-chấm-bài>
+DEEPSEEK_BASE_URL=https://api.xompet.io.vn/v1
+DEEPSEEK_VISION_MODEL=deepseek-v4-flash-vision-exp
 ```
 
-Tạo `SESSION_SECRET` bằng:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
+> **Không có biến `SESSION_SECRET`.** App dùng session lưu trong bộ nhớ (Map), mất khi restart. Chỉ cần `ADMIN_PASSWORD` **≥ 12 ký tự**, nếu ngắn hơn server `throw` và **crash ngay khi khởi động**.
 
 > **Quan trọng:** `ADMIN_PASSWORD` chỉ có tác dụng **lần đầu**, khi `users.json` chưa tồn tại. Nếu đã có `users.json`, server **không** ghi đè mật khẩu. Muốn đổi mật khẩu sau này thì dùng chức năng trong app, hoặc xoá `users.json` (sẽ mất hết tài khoản).
 
@@ -73,18 +75,20 @@ Chọn **một** trong hai cách. Cách 1 dễ hơn, cách 2 rẻ hơn.
 
 #### Cách 1 — Render (có giao diện web, dễ nhất)
 
+> Phần này chỉ là bản tóm tắt. **Hướng dẫn đầy đủ từng bước nằm ở `RENDER.md`** — gồm cả cách chọn gói Free (0đ, mất dữ liệu) hay trả phí (giữ dữ liệu), 2 file `render.yaml` / `render.paid.yaml` có sẵn trong repo, và bảng xử lý sự cố.
+
 1. Đẩy code lên GitHub (nhớ `.gitignore` đã bỏ `.env` và `data/`).
 2. Vào https://render.com → **New** → **Web Service** → chọn repo.
 3. Điền:
    - **Runtime**: Node
-   - **Build Command**: `npm install && npm run build`
+   - **Build Command**: `npm install` (đã tự build giao diện nhờ `"postinstall": "npm run build"` trong `package.json`)
    - **Start Command**: `npm start`
    - **Health Check Path**: `/api/health`
-4. Mục **Environment** → thêm các biến: `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SESSION_SECRET`.
-5. Mục **Disks** → **Add Disk**:
+4. Mục **Environment** → thêm các biến: `ADMIN_EMAIL`, `ADMIN_PASSWORD` (**≥ 12 ký tự**, nếu không server crash ngay), `DEEPSEEK_API_KEY`, `DEEPSEEK_BASE_URL`, `DEEPSEEK_VISION_MODEL`.
+5. Mục **Disks** → **Add Disk** (⚠️ **chỉ gói trả phí mới có**; gói Free không gắn được Disk và dữ liệu sẽ mất mỗi lần deploy):
    - **Mount Path**: `/var/data`
    - **Size**: 1 GB
-6. Thêm biến môi trường `DATA_DIR=/var/data` ← **bước này bắt buộc**, xem Phần C.
+6. Thêm biến môi trường `DATA_DIR=/var/data` ← **bước này bắt buộc nếu đã gắn Disk**, xem Phần C.
 
 Nhấn **Create Web Service**. Sau vài phút Render cho bạn địa chỉ dạng `https://ten-app.onrender.com`.
 
@@ -100,7 +104,7 @@ sudo npm i -g pm2
 git clone <repo-của-bạn> /var/www/lopso
 cd /var/www/lopso
 npm install && npm run build
-cp .env.example .env && nano .env    # điền ADMIN_PASSWORD, SESSION_SECRET
+cp .env.example .env && nano .env    # điền ADMIN_PASSWORD (≥12 ký tự) + DEEPSEEK_API_KEY
 
 sudo mkdir -p /var/data && sudo chown $USER /var/data
 pm2 start server.js --name lopso --update-env
@@ -219,7 +223,7 @@ Dữ liệu đang lưu tại: /var/data
 
 ### 2. `.env` không được đẩy lên GitHub
 
-`.env` chứa `ADMIN_PASSWORD` và `SESSION_SECRET`. Kiểm tra `.gitignore` có `.env` trước khi `git push`. Trên Render/VPS thì khai báo biến trong phần Environment, không dùng file.
+`.env` chứa `ADMIN_PASSWORD` và `DEEPSEEK_API_KEY`. Kiểm tra `.gitignore` có `.env` trước khi `git push`. Trên Render/VPS thì khai báo biến trong phần Environment, không dùng file.
 
 ### 3. Sao lưu dữ liệu
 
@@ -230,9 +234,9 @@ Toàn bộ dữ liệu là 3 file JSON trong `DATA_DIR`. Sao lưu định kỳ:
 tar czf backup-$(date +%F).tar.gz /var/data
 ```
 
-### 4. Đổi `SESSION_SECRET` là đăng xuất tất cả
+### 4. Session mất khi restart service
 
-Mọi người dùng sẽ phải đăng nhập lại. Không sao, chỉ cần biết trước.
+App lưu session trong bộ nhớ (Map), **không** dùng `SESSION_SECRET` và không ghi ra đĩa. Mỗi lần deploy lại hoặc service ngủ/thức (gói Free của Render ngủ sau 15 phút không dùng), mọi người dùng bị đăng xuất và phải đăng nhập lại. Dữ liệu (users/classes/assignments) **không** bị ảnh hưởng — chỉ mất phiên đăng nhập.
 
 ---
 
@@ -262,6 +266,8 @@ npm run test:nospawn
 | `/api/health` không trả về | Sai Start Command | Phải là `npm start` |
 | Giao diện trắng, API vẫn chạy | Chưa `npm run build` | Chạy `npm run build` rồi deploy lại |
 | Upload ảnh báo `Unexpected file field` | Sai tên field | Field phải tên là `image` |
+| Service crash ngay khi start, log báo `ADMIN_PASSWORD` | Mật khẩu < 12 ký tự | Đặt lại `ADMIN_PASSWORD` ≥ 12 ký tự |
+| Vào web bị đăng xuất liên tục | Session in-memory + service restart/ngủ | Bình thường; đăng nhập lại, hoặc nâng gói để service không ngủ |
 
 ---
 
@@ -269,3 +275,5 @@ npm run test:nospawn
 
 **Lần đầu:** `npm install` → điền `.env` → `npm run build` → tạo Disk + `DATA_DIR` → deploy.
 **Mỗi lần sửa code:** `npm test` → `npm run build` → `git push` (Render tự lo) hoặc `git pull && npm run build && pm2 restart lopso` (VPS).
+
+> **Deploy lên Render:** theo `RENDER.md`. **Không dùng Disk** (gói Free) thì bỏ qua bước tạo Disk và `DATA_DIR` — nhưng dữ liệu sẽ mất mỗi lần deploy.

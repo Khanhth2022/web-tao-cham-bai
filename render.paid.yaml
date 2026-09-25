@@ -1,0 +1,61 @@
+# Render Blueprint — PHƯƠNG ÁN TRẢ PHÍ (có Persistent Disk, GIỮ ĐƯỢC DỮ LIỆU)
+#
+# Khác biệt duy nhất so với bản Free: có khối "disk:" và biến DATA_DIR.
+# Ổ đĩa gắn ngoài là thứ duy nhất không bị xoá khi deploy lại.
+#
+# Chi phí tham khảo: web service gói rẻ nhất (Starter) + disk 1 GB,
+# khoảng 7 USD/tháng. Xem giá hiện tại ở https://render.com/pricing
+#
+# LƯU Ý QUAN TRỌNG: gắn Disk sẽ TẮT "zero-downtime deploy". Mỗi lần deploy,
+# Render tắt instance cũ TRƯỚC rồi mới bật instance mới → web chết vài giây.
+# Đó là đánh đổi bắt buộc để không hỏng dữ liệu, không tránh được.
+#
+# Cách dùng:
+#   1. Đưa file này lên GitHub
+#   2. Render Dashboard → New → Blueprint → chọn repo
+#   3. Ở ô "Blueprint Path" ghi: render.paid.yaml
+#      (KHÔNG được đổi tên file này thành render.yaml khi đã có file kia —
+#       mỗi Blueprint nên có một path riêng.)
+#   4. Deploy Blueprint → điền ADMIN_PASSWORD và DEEPSEEK_API_KEY khi được hỏi
+#
+# Chỉ chọn MỘT trong hai Blueprint cho cùng một service. Chạy cả hai thì
+# Blueprint này sẽ giành quyền quản lý service của Blueprint kia.
+
+services:
+  - type: web
+    name: lopso
+    runtime: node
+    plan: starter
+    region: singapore
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+
+    # Ổ đĩa không bị xoá khi deploy lại. Chỉ gắn được cho gói trả phí.
+    disk:
+      name: lopso-data
+      mountPath: /var/data
+      sizeGB: 1
+
+    envVars:
+      # --- Bắt buộc, phải tự điền ---
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: DEEPSEEK_API_KEY
+        sync: false
+
+      # --- BẮT BUỘC trên gói trả phí: trỏ dữ liệu vào Disk ---
+      # Phải khớp CHÍNH XÁC với mountPath ở trên. Sai đường dẫn =
+      # dữ liệu ghi vào thư mục code = mất sạch mỗi lần deploy.
+      - key: DATA_DIR
+        value: /var/data
+
+      # --- Có giá trị mặc định, sửa nếu cần ---
+      - key: ADMIN_EMAIL
+        value: admin@lopso.vn
+      - key: DEEPSEEK_BASE_URL
+        value: https://api.xompet.io.vn/v1
+      - key: DEEPSEEK_VISION_MODEL
+        value: deepseek-v4-flash-vision-exp
