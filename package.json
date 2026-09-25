@@ -7,9 +7,13 @@
     "dev": "concurrently \"vite\" \"node server.js\"",
     "build": "vite build",
     "start": "node server.js",
+    "check:api": "node scripts/check-api.mjs",
+    "test": "node --test \"scripts/*.test.mjs\"",
+    "test:nospawn": "node --test --experimental-test-isolation=none \"scripts/*.test.mjs\"",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@napi-rs/canvas": "latest",
     "@supabase/supabase-js": "latest",
     "@vitejs/plugin-react": "latest",
     "concurrently": "latest",
@@ -17,6 +21,7 @@
     "express": "latest",
     "lucide-react": "latest",
     "multer": "latest",
+    "pdfjs-dist": "latest",
     "react": "latest",
     "react-dom": "latest",
     "vite": "latest"

@@ -17,11 +17,33 @@ Mở `http://localhost:3001`.
 1. Tạo API key tại https://platform.deepseek.com/api_keys.
 2. Sao chép `.env.example` thành `.env`.
 3. Điền `DEEPSEEK_API_KEY` ở phía server; không dùng biến `VITE_` cho khóa bí mật.
-4. API gọi `https://api.deepseek.com/chat/completions` với model `deepseek-v4-flash-vision-exp` (DeepSeek hiện ghi nhận tên legacy này vẫn được chấp nhận và được phục vụ bởi V4.1 Flash).
+4. API mặc định gọi endpoint OpenAI-compatible `https://api.xompet.io.vn/v1/chat/completions` với model `deepseek-v4-flash-vision-exp`. Có thể đổi endpoint bằng biến `DEEPSEEK_BASE_URL`.
 5. Khởi động lại `npm start`.
 6. Upload ảnh tại mục **Tạo đề bằng AI**.
 
-Nếu chưa có khóa, API vẫn chạy chế độ demo để kiểm tra giao diện. Với PDF, hãy chuyển từng trang đáp án thành PNG/JPG trước khi upload; endpoint hiện nhận trường `image`.
+Nếu chưa có khóa, API vẫn chạy chế độ demo để kiểm tra giao diện. Có thể upload trực tiếp PDF, PNG hoặc JPG tại mục tạo đề AI. Server chuyển tối đa 10 trang PDF đầu tiên thành ảnh PNG rồi gửi các ảnh đó cho Vision qua một request; tệp gốc không được lưu trên server. Giới hạn upload 10 MB; PDF lớn nên chia nhỏ trước khi tải lên.
+
+## Kiểm tra API đang chạy thật hay demo
+
+Sau khi đã điền `.env`, chạy:
+
+```bash
+npm run check:api
+```
+
+- `PASS: API phản hồi thành công` nghĩa là URL, API key và model đã được nhà cung cấp chấp nhận.
+- `HTTP 401/403` nghĩa là API key sai, hết hạn hoặc không có quyền.
+- `HTTP 404` nghĩa là endpoint hoặc model không tồn tại.
+- `HTTP 429` nghĩa là hết quota/đang bị giới hạn.
+
+Khi chạy web, mở hai URL local này để kiểm tra mà không lộ key:
+
+```text
+http://localhost:3001/api/health
+http://localhost:3001/api/vision-status
+```
+
+`/api/vision-status` trả `mode: "live-ready"` khi server đã đọc được `DEEPSEEK_API_KEY`, nhưng chỉ lệnh `npm run check:api` hoặc upload một ảnh mới xác minh được key thực sự gọi thành công tới nhà cung cấp.
 
 ## Bật Supabase
 
